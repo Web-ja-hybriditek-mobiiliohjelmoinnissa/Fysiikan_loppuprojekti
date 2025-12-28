@@ -15,7 +15,8 @@ Sovellus ajetaan projektikansiossa:
 
 Jos haluat ajaa sovelluksen suoraan GitHubista:
 
-    python -m streamlit run https://raw.githubusercontent.com/Web-ja-hybriditek-mobiiliohjelmoinnissa/Fysiikan_loppuprojekti/main/app.py
+    streamlit run https://raw.githubusercontent.com/Web-ja-hybriditek-mobiiliohjelmoinnissa/Fysiikan_loppuprojekti/main/app.py
+
 
 """
 
