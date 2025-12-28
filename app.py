@@ -12,6 +12,11 @@ Tarvittavat paketit (asennus terminaalissa):
 Sovellus ajetaan projektikansiossa:
 
     python -m streamlit run app.py
+
+Jos haluat ajaa sovelluksen suoraan GitHubista:
+
+    python -m streamlit run https://raw.githubusercontent.com/Web-ja-hybriditek-mobiiliohjelmoinnissa/Fysiikan_loppuprojekti/main/app.py
+
 """
 
 import numpy as np
@@ -33,13 +38,16 @@ CUT_START = 40.0   # s, datan alusta leikattava pätkä
 CUT_END = 5.0      # s, datan lopusta leikattava pätkä
 CUTOFF_HZ = 5.0    # lowpass cutoff
 
+ACC_URL = "https://raw.githubusercontent.com/Web-ja-hybriditek-mobiiliohjelmoinnissa/Fysiikan_loppuprojekti/main/data/LinearAcceleration.csv"
+GPS_URL = "https://raw.githubusercontent.com/Web-ja-hybriditek-mobiiliohjelmoinnissa/Fysiikan_loppuprojekti/main/data/Location.csv"
+
 
 # -----------------------------
 # APUFUNKTIOT: PERUS
 # -----------------------------
 
 def estimate_sampling_rate(time_array: np.ndarray) -> float:
-    """Arvioi näytteenottotaajuuden aikavektorista (median dt)."""
+    
     dt = np.diff(time_array)
     dt = dt[dt > 0]
     if len(dt) == 0:
@@ -53,13 +61,7 @@ def estimate_sampling_rate(time_array: np.ndarray) -> float:
 # -----------------------------
 
 def butter_lowpass_filter(data, cutoff, fs, order=3):
-    """
-    Lowpass-suodatin.
-
-    cutoff = katkaisutaajuus [Hz]
-    fs     = näytteenottotaajuus [Hz]
-    order  = suodattimen kertaluku
-    """
+    
     nyq = fs / 2
     normal_cutoff = cutoff / nyq
     b, a = butter(order, normal_cutoff, btype="low", analog=False)
@@ -72,10 +74,7 @@ def butter_lowpass_filter(data, cutoff, fs, order=3):
 # -----------------------------
 
 def compute_psd_and_dominant_freq(signal: np.ndarray, fs: float):
-    """
-    Fourier-analyysi ja tehospektri opettajan tyyliin.
-    Palauttaa positiiviset taajuudet, niiden PSD:n ja tehokkaimman taajuuden.
-    """
+    
     N = len(signal)
     dt = 1.0 / fs
 
@@ -97,14 +96,14 @@ def compute_psd_and_dominant_freq(signal: np.ndarray, fs: float):
 
 
 def count_steps_zero_crossings(signal: np.ndarray) -> int:
-    """Askelmäärä nollakohdan ylitysten perusteella (alhaalta ylöspäin)."""
+    
     crossings = (signal[:-1] < 0) & (signal[1:] >= 0)
     steps = int(np.sum(crossings))
     return steps
 
 
 def estimate_steps_from_frequency(f_dom: float, duration_s: float) -> int:
-    """Askelmäärä askeltaajuudesta: f_dom * kesto."""
+    
     steps = int(np.round(f_dom * duration_s))
     return steps
 
@@ -114,7 +113,7 @@ def estimate_steps_from_frequency(f_dom: float, duration_s: float) -> int:
 # -----------------------------
 
 def haversine(lat1, lon1, lat2, lon2):
-    """Haversinen kaava kahden pisteen väliseen etäisyyteen (metreinä)."""
+    
     R = 6371000.0  # Maan säde metreissä
 
     phi1 = np.radians(lat1)
@@ -130,7 +129,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 
 def compute_distance_and_speed(df_gps: pd.DataFrame):
-    """Laskee kuljetun matkan ja keskinopeuden GPS-datasta."""
+    
     time_col = [c for c in df_gps.columns if "Time" in c][0]
     lat_col = [c for c in df_gps.columns if "Lat" in c][0]
     lon_col = [c for c in df_gps.columns if "Lon" in c][0]
@@ -164,22 +163,22 @@ def compute_distance_and_speed(df_gps: pd.DataFrame):
 # -----------------------------
 
 def load_acceleration_data(acc_file):
-    """Lataa kiihtyvyysdatan uploadista tai oletuspolusta."""
+    
     if acc_file is not None:
         df_acc = pd.read_csv(acc_file)
     else:
-        df_acc = pd.read_csv("data/LinearAcceleration.csv")
+        df_acc = pd.read_csv(ACC_URL)
 
     df_acc = df_acc.dropna()
     return df_acc
 
 
 def load_gps_data(gps_file):
-    """Lataa GPS-datan uploadista tai oletuspolusta."""
+    
     if gps_file is not None:
         df_gps = pd.read_csv(gps_file)
     else:
-        df_gps = pd.read_csv("data/Location.csv")
+        df_gps = pd.read_csv(GPS_URL)
 
     df_gps = df_gps.dropna()
     return df_gps
@@ -190,7 +189,7 @@ def load_gps_data(gps_file):
 # -----------------------------
 
 def create_route_map(df_gps: pd.DataFrame) -> folium.Map:
-    """Luo Folium-kartan GPS-reitistä."""
+    
     lat_col = [c for c in df_gps.columns if "Lat" in c][0]
     lon_col = [c for c in df_gps.columns if "Lon" in c][0]
 
@@ -213,8 +212,9 @@ def create_route_map(df_gps: pd.DataFrame) -> folium.Map:
 # -----------------------------
 
 def section_divider():
+    
     st.markdown(
-        "<hr style='border: 3px solid #333333; margin: 28px 0;'>",
+        "<hr style='border: 3px solid #666666; margin: 30px 0;'>",
         unsafe_allow_html=True
     )
 
@@ -244,19 +244,19 @@ def main():
     st.sidebar.header("Datan lataus")
 
     acc_file = st.sidebar.file_uploader(
-        "Lataa LinearAcceleration.csv (tai käytä oletusdataa data/LinearAcceleration.csv)",
+        "Lataa LinearAcceleration.csv (tai käytä oletusdataa GitHubista)",
         type="csv"
     )
     gps_file = st.sidebar.file_uploader(
-        "Lataa Location.csv (tai käytä oletusdataa data/Location.csv)",
+        "Lataa Location.csv (tai käytä oletusdataa GitHubista)",
         type="csv"
     )
 
     try:
         df_acc = load_acceleration_data(acc_file)
         df_gps = load_gps_data(gps_file)
-    except FileNotFoundError:
-        st.error("Datan lataus epäonnistui. Varmista, että data/LinearAcceleration.csv ja data/Location.csv löytyvät.")
+    except Exception:
+        st.error("Datan lataus epäonnistui. Tarkista, että CSV-linkit ja/tai uploadit ovat kunnossa.")
         return
 
     time_acc_col = [c for c in df_acc.columns if "Time" in c][0]
